@@ -1,0 +1,27 @@
+[project]
+name = "doris-lineage-mcp"
+version = "0.1.0"
+description = "SQL-first Doris data lineage MCP server backed by SQLite and networkx."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastmcp>=2.0",
+    "sqlglot>=25.0",
+    "networkx>=3.3",
+    "aiosqlite>=0.20",
+    "pydantic>=2.7",
+    "pymysql>=1.1",
+    "starlette>=0.37",
+    "uvicorn>=0.30",
+]
+
+[project.scripts]
+doris-lineage-mcp = "doris_lineage.server:main"
+doris-lineage-web = "doris_lineage.web:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/doris_lineage"]

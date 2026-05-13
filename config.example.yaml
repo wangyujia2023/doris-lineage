@@ -1,0 +1,26 @@
+doris:
+  host: "localhost"
+  port: 9030
+  user: "lineage_reader"
+  password: ""
+  default_catalog: "internal"
+
+audit_table:
+  table: "internal.__internal_schema.audit_log"
+  query_id_column: "query_id"
+  user_column: "user"
+  database_column: "db"
+  catalog_column: "catalog"
+  sql_column: "stmt"
+  state_column: "state"
+  executed_at_column: "time"
+  stmt_type_column: ""
+  system_user_blacklist: ["root", "admin", "doris", "fe_scheduler"]
+  system_db_blacklist: ["information_schema", "__internal_schema", "_statistics_"]
+
+storage:
+  db_path: "./lineage.db"
+
+mcp:
+  transport: "stdio"
+  default_confidence_threshold: 0.6

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Doris Lineage Console</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <main class="shell">
+    <aside class="toolrail">
+      <header class="brand">
+        <div class="mark">DL</div>
+        <div>
+          <h1>Doris Lineage</h1>
+          <p>MCP Control Surface</p>
+        </div>
+      </header>
+
+      <section class="panel compact">
+        <div class="panel-title">
+          <span>资产浏览</span>
+          <button id="refreshAssetsBtn" class="icon-btn" title="刷新表列表">↻</button>
+        </div>
+        <div class="asset-browser">
+          <input id="assetSearch" placeholder="搜索 catalog.database.table">
+          <div id="assetList" class="asset-list"></div>
+          <div id="selectedAsset" class="selection">未选择表</div>
+          <div id="fieldList" class="field-list"></div>
+          <div id="selectedField" class="selection">未选择字段</div>
+          <div class="quick-actions">
+            <button id="tableLineageBtn">表上下游</button>
+            <button id="tableFullBtn">表全量</button>
+            <button id="columnLineageBtn">字段上下游</button>
+            <button id="columnFullBtn">字段全量</button>
+            <button id="impactBtn">影响分析</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel compact">
+        <div class="panel-title">
+          <span>工具</span>
+          <button id="refreshHealth" class="icon-btn" title="刷新健康状态">↻</button>
+        </div>
+        <div id="toolList" class="tool-list"></div>
+      </section>
+    </aside>
+
+    <section class="workbench">
+      <header class="topbar">
+        <div>
+          <h2 id="activeToolName">加载中</h2>
+          <p id="activeToolGroup">等待工具定义</p>
+        </div>
+        <div class="metrics">
+          <div><span id="metricRuns">-</span><label>Runs</label></div>
+          <div><span id="metricEdges">-</span><label>Edges</label></div>
+          <div><span id="metricProposed">-</span><label>Proposed</label></div>
+        </div>
+      </header>
+
+      <nav class="tabs" aria-label="工作区切换">
+        <button class="tab-btn" data-tab="params">参数</button>
+        <button class="tab-btn active" data-tab="graph">血缘图谱</button>
+        <button class="tab-btn" data-tab="table">表格</button>
+      </nav>
+
+      <section class="tab-stage">
+        <section id="tab-params" class="tab-panel">
+          <section class="panel editor-panel">
+            <div class="panel-title">
+              <span>参数</span>
+              <div class="button-row">
+                <button id="formatBtn">格式化</button>
+                <button id="runBtn" class="primary">执行</button>
+              </div>
+            </div>
+            <textarea id="payloadEditor" spellcheck="false"></textarea>
+            <div id="statusLine" class="status">Ready</div>
+          </section>
+
+          <section class="panel response-panel">
+            <div class="panel-title">
+              <span>响应 JSON</span>
+              <button id="copyJsonBtn">复制</button>
+            </div>
+            <pre id="jsonOutput">{}</pre>
+          </section>
+        </section>
+
+        <section id="tab-graph" class="tab-panel active">
+          <section class="panel graph-panel">
+            <div class="panel-title">
+              <span>血缘图谱</span>
+              <div class="button-row">
+                <label class="toggle"><input id="includeProposedToggle" type="checkbox" checked> PROPOSED</label>
+                <button id="fitGraphBtn">重排</button>
+                <button id="loadFullGraphBtn">全量图</button>
+              </div>
+            </div>
+            <div class="graph-wrap">
+              <svg id="graphSvg" role="img" aria-label="lineage graph"></svg>
+              <div id="emptyGraph" class="empty-graph">执行查询后展示血缘关系</div>
+              <div id="nodeInspector" class="node-inspector">选择节点查看详情</div>
+            </div>
+          </section>
+        </section>
+
+        <section id="tab-table" class="tab-panel panel table-panel">
+          <div class="panel-title">
+            <span>血缘边表格</span>
+            <button id="copyEdgesBtn">复制</button>
+          </div>
+          <div id="edgeTable" class="edge-table"></div>
+        </section>
+      </section>
+
+      <footer class="workbench-footer">
+        <span>当前结果会同步到图谱和表格，选择左侧资产后可直接查看表或字段上下游。</span>
+      </footer>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>
