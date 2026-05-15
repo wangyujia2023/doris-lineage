@@ -5,122 +5,185 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Doris Lineage Console</title>
   <link rel="stylesheet" href="/static/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
 </head>
 <body>
-  <main class="shell">
-    <aside class="toolrail">
-      <header class="brand">
-        <div class="mark">DL</div>
-        <div>
-          <h1>Doris Lineage</h1>
-          <p>MCP Control Surface</p>
-        </div>
-      </header>
+  <div class="topbar">
+    <div class="top-logo">Doris <span>Lineage</span></div>
+    <div class="top-sep"></div>
+    <div class="top-pill">Catalog <strong>internal</strong></div>
+    <div class="status-chips">
+      <span class="chip ok">Runs <b id="metricRuns">-</b></span>
+      <span class="chip warn">Edges <b id="metricEdges">-</b></span>
+      <span class="chip err">Proposed <b id="metricProposed">-</b></span>
+    </div>
+    <div class="top-right">
+      <button id="refreshHealth" class="btn btn-ghost">刷新状态</button>
+      <button id="runIngestBtn" class="btn btn-primary">采集审计表</button>
+    </div>
+  </div>
 
-      <section class="panel compact">
-        <div class="panel-title">
-          <span>资产浏览</span>
-          <button id="refreshAssetsBtn" class="icon-btn" title="刷新表列表">↻</button>
-        </div>
-        <div class="asset-browser">
+  <main class="main">
+    <aside class="sidebar">
+      <section class="side-section">
+        <div class="side-title">资产选择</div>
+        <div class="search-row">
           <input id="assetSearch" placeholder="搜索 catalog.database.table">
-          <div id="assetList" class="asset-list"></div>
-          <div id="selectedAsset" class="selection">未选择表</div>
-          <div id="fieldList" class="field-list"></div>
-          <div id="selectedField" class="selection">未选择字段</div>
-          <div class="quick-actions">
-            <button id="tableLineageBtn">表上下游</button>
-            <button id="tableFullBtn">表全量</button>
-            <button id="columnLineageBtn">字段上下游</button>
-            <button id="columnFullBtn">字段全量</button>
-            <button id="impactBtn">影响分析</button>
-          </div>
+          <button id="refreshAssetsBtn" class="square-btn" title="刷新资产">↻</button>
         </div>
+        <div id="assetList" class="asset-list"></div>
       </section>
 
-      <section class="panel compact">
-        <div class="panel-title">
-          <span>工具</span>
-          <button id="refreshHealth" class="icon-btn" title="刷新健康状态">↻</button>
+      <section class="side-section">
+        <div class="side-title">字段</div>
+        <div id="fieldList" class="field-list"></div>
+      </section>
+
+      <section class="side-section query-card">
+        <div class="side-title">血缘查询</div>
+        <label>查询对象</label>
+        <div class="segmented">
+          <button class="seg active" data-scope="table">表</button>
+          <button class="seg" data-scope="column">字段</button>
         </div>
-        <div id="toolList" class="tool-list"></div>
+        <label>方向</label>
+        <select id="directionSelect">
+          <option value="both">上下游</option>
+          <option value="upstream">上游</option>
+          <option value="downstream">下游</option>
+        </select>
+        <label>深度</label>
+        <input id="depthInput" type="number" min="1" max="12" value="5">
+        <label class="check-line"><input id="includeProposedToggle" type="checkbox" checked> 包含 PROPOSED</label>
+        <div class="action-grid">
+          <button id="traceBtn" class="btn btn-primary">查询血缘</button>
+          <button id="fullTraceBtn" class="btn btn-ghost">全量上下游</button>
+          <button id="impactBtn" class="btn btn-ghost wide">字段影响分析</button>
+          <button id="loadFullGraphBtn" class="btn btn-ghost wide">加载全库图谱</button>
+        </div>
       </section>
     </aside>
 
-    <section class="workbench">
-      <header class="topbar">
+    <section class="content">
+      <header class="object-header">
         <div>
-          <h2 id="activeToolName">加载中</h2>
-          <p id="activeToolGroup">等待工具定义</p>
+          <div class="eyebrow">CURRENT TARGET</div>
+          <h1 id="targetTitle">请选择左侧表或字段</h1>
+          <p id="targetSubtitle">支持表级、字段级、全量图谱和影响分析。</p>
         </div>
-        <div class="metrics">
-          <div><span id="metricRuns">-</span><label>Runs</label></div>
-          <div><span id="metricEdges">-</span><label>Edges</label></div>
-          <div><span id="metricProposed">-</span><label>Proposed</label></div>
+        <div class="summary-strip">
+          <div><strong id="statNodes">0</strong><span>Nodes</span></div>
+          <div><strong id="statGraphEdges">0</strong><span>Edges</span></div>
+          <div><strong id="statStatus">Ready</strong><span>Status</span></div>
         </div>
       </header>
 
-      <nav class="tabs" aria-label="工作区切换">
-        <button class="tab-btn" data-tab="params">参数</button>
-        <button class="tab-btn active" data-tab="graph">血缘图谱</button>
-        <button class="tab-btn" data-tab="table">表格</button>
+      <nav class="tab-bar">
+        <button class="tab active" data-tab="lineage">血缘图谱</button>
+        <button class="tab" data-tab="edges">边明细</button>
+        <button class="tab" data-tab="api">接口演示</button>
+        <button class="tab" data-tab="json">原始响应</button>
       </nav>
 
-      <section class="tab-stage">
-        <section id="tab-params" class="tab-panel">
-          <section class="panel editor-panel">
-            <div class="panel-title">
-              <span>参数</span>
-              <div class="button-row">
-                <button id="formatBtn">格式化</button>
-                <button id="runBtn" class="primary">执行</button>
-              </div>
+      <section class="content-body">
+        <section id="panel-lineage" class="panel active">
+          <div class="graph-toolbar">
+            <div class="legend">
+              <span><i class="dot table"></i>表</span>
+              <span><i class="dot field"></i>字段</span>
+              <span><i class="dot proposed"></i>PROPOSED</span>
             </div>
-            <textarea id="payloadEditor" spellcheck="false"></textarea>
-            <div id="statusLine" class="status">Ready</div>
-          </section>
-
-          <section class="panel response-panel">
-            <div class="panel-title">
-              <span>响应 JSON</span>
-              <button id="copyJsonBtn">复制</button>
+            <div class="toolbar-actions">
+              <button id="fitGraphBtn" class="btn btn-ghost">重排动画</button>
+              <button id="focusSelectedBtn" class="btn btn-ghost">聚焦当前对象</button>
             </div>
-            <pre id="jsonOutput">{}</pre>
-          </section>
+          </div>
+          <div class="graph-shell">
+            <div id="lineageChart"></div>
+            <div id="emptyGraph" class="empty-graph">选择资产后点击查询，或直接加载全库图谱。</div>
+          </div>
         </section>
 
-        <section id="tab-graph" class="tab-panel active">
-          <section class="panel graph-panel">
-            <div class="panel-title">
-              <span>血缘图谱</span>
-              <div class="button-row">
-                <label class="toggle"><input id="includeProposedToggle" type="checkbox" checked> PROPOSED</label>
-                <button id="fitGraphBtn">重排</button>
-                <button id="loadFullGraphBtn">全量图</button>
-              </div>
+        <section id="panel-edges" class="panel">
+          <div class="table-head">
+            <div>
+              <h2>血缘边明细</h2>
+              <p>展示当前图谱中的 source、target、类型、状态、置信度和来源 query。</p>
             </div>
-            <div class="graph-wrap">
-              <svg id="graphSvg" role="img" aria-label="lineage graph"></svg>
-              <div id="emptyGraph" class="empty-graph">执行查询后展示血缘关系</div>
-              <div id="nodeInspector" class="node-inspector">选择节点查看详情</div>
-            </div>
-          </section>
-        </section>
-
-        <section id="tab-table" class="tab-panel panel table-panel">
-          <div class="panel-title">
-            <span>血缘边表格</span>
-            <button id="copyEdgesBtn">复制</button>
+            <button id="copyEdgesBtn" class="btn btn-ghost">复制边 JSON</button>
           </div>
           <div id="edgeTable" class="edge-table"></div>
         </section>
-      </section>
 
-      <footer class="workbench-footer">
-        <span>当前结果会同步到图谱和表格，选择左侧资产后可直接查看表或字段上下游。</span>
-      </footer>
+        <section id="panel-api" class="panel api-panel">
+          <aside class="api-list" id="toolList"></aside>
+          <section class="api-workbench">
+            <div class="api-header">
+              <div>
+                <div class="eyebrow" id="activeToolGroup">TOOL</div>
+                <h2 id="activeToolName">加载中</h2>
+                <p id="activeToolDesc">等待工具定义。</p>
+              </div>
+              <div class="button-row">
+                <button id="formatBtn" class="btn btn-ghost">格式化参数</button>
+                <button id="runBtn" class="btn btn-primary">调用接口</button>
+              </div>
+            </div>
+            <div class="api-editors">
+              <div>
+                <div class="editor-label">Request Payload</div>
+                <textarea id="payloadEditor" spellcheck="false"></textarea>
+              </div>
+              <div>
+                <div class="editor-label">Response</div>
+                <pre id="apiOutput">{}</pre>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section id="panel-json" class="panel">
+          <div class="table-head">
+            <div>
+              <h2>原始响应</h2>
+              <p>保留最近一次工具调用返回值，便于调试和复制给 LLM。</p>
+            </div>
+            <button id="copyJsonBtn" class="btn btn-ghost">复制 JSON</button>
+          </div>
+          <pre id="jsonOutput">{}</pre>
+        </section>
+      </section>
     </section>
+
+    <aside class="right-panel">
+      <section class="rp-section">
+        <div class="rp-title">节点详情</div>
+        <div id="nodeInspector" class="node-card">点击图谱节点查看完整四层标识。</div>
+      </section>
+      <section class="rp-section">
+        <div class="rp-title">当前选择</div>
+        <div class="kv">
+          <span>表</span>
+          <code id="selectedAsset">未选择</code>
+        </div>
+        <div class="kv">
+          <span>字段</span>
+          <code id="selectedField">未选择</code>
+        </div>
+      </section>
+      <section class="rp-section">
+        <div class="rp-title">接口能力</div>
+        <div class="cap-list">
+          <div><b>采集</b><span>从 Doris audit_log 解析 SQL 血缘</span></div>
+          <div><b>查询</b><span>表级、字段级、全库图谱</span></div>
+          <div><b>核验</b><span>PROPOSED 边确认或拒绝</span></div>
+          <div><b>分析</b><span>字段变更下游影响范围</span></div>
+        </div>
+      </section>
+    </aside>
   </main>
+
+  <div id="statusLine" class="toast">Ready</div>
   <script src="/static/app.js"></script>
 </body>
 </html>
